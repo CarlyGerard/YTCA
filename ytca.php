@@ -42,20 +42,10 @@ $badLabel = 'Needs work';
 $includeLinks = true; 
 
 // Set $includeChannelID to true to include a YouTube Channel ID column in the output; otherwise false 
-$includeChannelID = false;
+$includeChannelID = true;
 
-// Copy and uncomment the following line for each YouTube channel. Assign 'name' and 'id' as follows: 
-// 'name' - The name of the channel as you would like it to appear in the report 
-// 'id' - either the 24-character YouTube Channel ID or its associated username (see README.md for more about channel IDs) 
-// $channels[] = array('name'=>'Name of Channel','id'=>'channel_id');
-
-// Optionally, the $channels array can include additional keys. 
-// Any keys other than 'name' and 'id' will be used as column headers in the report
-// and their values will be displayed as data for that channel in the report 
-// This can be useful if there is additional known meta data that you would like to include in the report 
-// Example: 
-// $channels[] = array('name'=>'Bernie Sanders','id'=>'UCH1dpzjCEiGAt8CXkryhkZg','Party'=>'Democrat');
-  
+//The list of channels is now held in the channels.ini file.
+$channels = parse_ini_file('channels.ini', true);
 /***********************
  *                     *
  *  END CONFIGURATION  *
@@ -71,49 +61,53 @@ $numChannels = sizeof($channels);
 
 // It can take a long time to collect data for all videos within a channel 
 // Therefore this script only handles one channel at a time. 
-if ($numChannels > 0) {   
-  if (!($c = $_POST['channel'])) { 
-    $c = 0; 
-  }
-  $channelId = $channels[$c]['id'];     
-  if (!(ischannelId($channelId))) { 
-    // this is not a valid channel ID; must be a username
-    $channelId = getChannelId($apiKey,$channelId);    
-  }
-  $channelQuery = buildYouTubeQuery('search',$channelId,$apiKey);
-  $channel['name'] = $channels[$c]['name'];
-  $channel['id'] = $channelId;
-  $numKeys = sizeof($channels[0]); 
-  if ($numKeys > 2) { 
-    // there is supplemental meta data in the array 
-    $keys = array_keys($channels[0]);
-    $i = 0;
-    while ($i < $numKeys) { 
-      $key = $keys[$i];
-      if ($key !== 'name' && $key !== 'id') { 
-        $metaKeys[] = $key;
-      }
-      $channel[$key] = $channels[$c][$key];
-      $i++; 
+if ($numChannels > 0) {
+  fwrite(STDERR, "Collecting data from Youtube API..." . "\n"); 
+
+  for($c=0; $c< $numChannels; ++$c) { 
+    /*if (!($c = $_POST['channel'])) { 
+      $c = 0; 
+    }*/
+    $channelId = $channels[$c]['id'];     
+    if (!(ischannelId($channelId))) { 
+      // this is not a valid channel ID; must be a username
+      $channelId = getChannelId($apiKey,$channelId);    
     }
-  }  
-  if ($content = fileGetContents($channelQuery)) {  
-    $json = json_decode($content,true);    
-    $numVideos = $json['pageInfo']['totalResults'];
-    $channel['videoCount'] = $numVideos; 
-    if ($numVideos > 0) { 
-      $channel['videos'] = getVideos($channelId,$json,$numVideos,$apiKey);
+    $channelQuery = buildYouTubeQuery('search',$channelId,$apiKey);
+    $channel['name'] = $channels[$c]['name'];
+    $channel['id'] = $channelId;
+    $numKeys = sizeof($channels[$c]); 
+    if ($numKeys > 2) { 
+      // there is supplemental meta data in the array 
+      $keys = array_keys($channels[$c]);
+      $i = 0;
+      while ($i < $numKeys) { 
+        $key = $keys[$i];
+        if ($key !== 'name' && $key !== 'id') { 
+          $metaKeys[] = $key;
+        }
+        $channel[$key] = $channels[$c][$key];
+        $i++; 
+      }
+    }  
+    if ($content = fileGetContents($channelQuery)) {  
+      $json = json_decode($content,true);    
+      $numVideos = $json['pageInfo']['totalResults'];
+      $channel['videoCount'] = $numVideos; 
+      if ($numVideos > 0) { 
+        $channel['videos'] = getVideos($channelId,$json,$numVideos,$apiKey);
+      }
+      else { 
+        echo 'URL Error: '.$channelQuery."<br/>\n";
+      }
+      $i++;  
     }
     else { 
-      echo 'URL Error: '.$channelQuery."<br/>\n";
+      echo '<p class="error">Unable to retrieve file: ';
+      echo '<a href="'.$channelQuery.'">'.$channelQuery.'</a></p>'."\n";
     }
-    $i++;  
+    showResults($c,$channel,$channels,$numChannels,$metaKeys,$includeHighlights,$goodPct,$badPct,$goodLabel,$badLabel,$includeHighTraffic,$minViews,$includeLinks,$includechannelId);
   }
-  else { 
-    echo '<p class="error">Unable to retrieve file: ';
-    echo '<a href="'.$channelQuery.'">'.$channelQuery.'</a></p>'."\n";
-  }
-  showResults($c,$channel,$channels,$numChannels,$metaKeys,$includeHighlights,$goodPct,$badPct,$goodLabel,$badLabel,$includeHighTraffic,$minViews,$includeLinks,$includechannelId);
 }
 else { 
   echo 'There are no channels.<br/>';
@@ -434,7 +428,8 @@ function showResults($c,$channel,$channels,$numChannels,$metaKeys,$includeHighli
       $totalDurationUncaptionedHighTraffic += $durationUncaptionedHighTraffic;
     }
     
-    // add current channel's data to the table     
+    // add current channel's data to the table 
+    fwrite(STDERR, "Processing channel: " . $channel['name'] . "\n"); 
     echo '<tr'; 
     if ($includeHighlights) {
       if ($pctCaptioned >= $goodPct) { 
@@ -540,7 +535,7 @@ function showResults($c,$channel,$channels,$numChannels,$metaKeys,$includeHighli
       }
     }
     
-    if ($c < ($numChannels - 1)) { 
+    /*if ($c < ($numChannels - 1)) { 
       // this is not the last channel 
       // append result to the cumulative results field
       echo '<form action="#" method="POST">'."\n";
@@ -563,7 +558,7 @@ function showResults($c,$channel,$channels,$numChannels,$metaKeys,$includeHighli
       echo $durationUncaptioned;
       if ($includeHighTraffic) {
         echo ','.$durationUncaptionedHighTraffic;
-      }
+      } 
       // Add supplemental meta data to end, since the number of fields is unknown
       // (makes for easier retrieval) 
       if ($numMeta) { 
@@ -589,7 +584,7 @@ function showResults($c,$channel,$channels,$numChannels,$metaKeys,$includeHighli
     else { 
       // this *is* the last channel! 
       // could display a Success! message 
-    }
+    }*/
   }
 }
   

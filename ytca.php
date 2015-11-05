@@ -13,7 +13,7 @@
 
 // See the YouTube API reference for instructions on obtaining an API key  
 // https://developers.google.com/youtube/v3/docs/
-$apiKey = ''; 
+$apiKey = file_get_contents('apikey');
 
 // Title of report 
 $title = 'YouTube Caption Auditor (YTCA) Report'; 

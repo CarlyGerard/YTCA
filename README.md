@@ -39,10 +39,10 @@ Requirements
 
 Instructions
 ------------
-
-1. Define variables in the Configuration block within [ytca.php][].  
-2. Run it. 
-3. Each channel will be processed individually. After each channel is processed, click the green button at the bottom of the page to proceed with the next channel. 
+ 
+1. Get an API key from Google/Youtube.  If you're with Webtech, you can find the link and login in Confluence by searching under 'Youtube Caption Auditor'.
+2. Create a file called 'apikey' and paste the key in there.
+3. In a terminal session, run 'make' and the program will process all of the channels at once.  The output will be in index.html.  
 
 Additional documentation is provided within the comments in [ytca.php][]. 
 

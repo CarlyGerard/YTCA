@@ -3,7 +3,7 @@
 YTCA = php ytca.php
 
 default: 
-	$(YTCA) > test.html
+	$(YTCA) > index.html
 
 clean:
 	$(RM) *.html

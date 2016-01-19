@@ -41,6 +41,7 @@ class Channel(object):
         )
         
         #Iterate through all pages in result set
+        print("Populating videos list...")
         while playlist_results:
             response = playlist_results.execute()
 
@@ -53,12 +54,27 @@ class Channel(object):
             playlist_results = youtube.playlistItems().list_next(playlist_results, response)
         self.total_videos = len(self.videos_list)
 
+    def find_captions(self):
+        #Turn video list into a comma separated string for the API query
+        videos_str = ",".join(self.videos_list)
+        video_response = youtube.videos().list(
+            part="contentDetails",
+            id=videos_str,
+            maxResults=50
+        ).execute()
+
+        for video_result in video_response.get("items", []):
+            if video_result['contentDetails']['caption'] == u'true':
+                self.captioned_videos += 1
+
     def test(self):
         self.uploads_playlist()
         self.get_videos()
+        self.find_captions()
         print(self.videos_list)
         print("Total videos in channel: %d" % self.total_videos)
+        print("Captioned Videos: %d" % self.captioned_videos)
 
-
-wwu = Channel('UCKMMgassh8FtXvu3LU3YMXA')
-wwu.test()
+#WWU IEP
+ch = Channel('UC3uOM3GRMJg4Fu93t-HdHBQ')
+ch.test()

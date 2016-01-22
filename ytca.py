@@ -28,6 +28,7 @@ class Channel(object):
         self.total_videos = 0
         self.captioned_videos = 0
 
+    #Query the channel in question for the id of the uplaods playlist
     def uploads_playlist(self):
         results = youtube.channels().list(
             part="contentDetails",
@@ -39,6 +40,7 @@ class Channel(object):
            self.uploads_list_id = uploads_list_id
            print(uploads_list_id)
 
+    #Go through the uploads plyalist and populate the list of video IDs 
     def get_videos(self):
         playlist_results = youtube.playlistItems().list(
             playlistId=self.uploads_list_id,
@@ -63,6 +65,7 @@ class Channel(object):
             #Get the next page
             playlist_results = youtube.playlistItems().list_next(playlist_results, response)
 
+    #Helper function for find_captions that 
     def video_request(self, videos_str):
         video_response = youtube.videos().list(
             part="contentDetails",
@@ -80,7 +83,7 @@ class Channel(object):
             query_str = ",".join(chunk)
             self.video_request(query_str)
 
-    def test(self):
+    def run(self):
         print("Processing channel %s" % self.name)
         self.uploads_playlist()
         self.get_videos()
@@ -110,4 +113,5 @@ if __name__ == '__main__':
 #    iep.test()
     for name, id in channels.items():
         this_channel = Channel(name, id)
-        this_channel.test()
+        this_channel.run()
+

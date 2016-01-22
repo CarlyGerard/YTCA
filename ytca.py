@@ -3,6 +3,7 @@ from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
 from collections import OrderedDict
+import argparse
 import csv
 try:
     import configparser
@@ -15,6 +16,14 @@ YOUTUBE_API_VERSION = "v3"
 
 with open('apikey', 'r') as f:
     DEVELOPER_KEY = f.readline()
+
+config = configparser.ConfigParser()
+
+parser = argparse.ArgumentParser()
+input_type_group = parser.add_mutually_exclusive_group()
+input_type_group.add_argument("--ini", help="Specify an alternative ini file to process.  Default is 'channels.ini'")
+input_type_group.add_argument("--username", help="Run the caption auditor on a single youtube account, by username")
+input_type_group.add_argument("--chid", help="Run the caption auditor on a single youtube account, by channel ID")
 
 #Initialize Data API object
 youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, developerKey=DEVELOPER_KEY)
@@ -38,7 +47,6 @@ class Channel(object):
         if "contentDetails" in channel:
            uploads_list_id = channel['contentDetails']['relatedPlaylists']['uploads']
            self.uploads_list_id = uploads_list_id
-           print(uploads_list_id)
 
     #Go through the uploads plyalist and populate the list of video IDs 
     def get_videos(self):
@@ -92,7 +100,6 @@ class Channel(object):
         print("Captioned Videos: %d\n" % self.captioned_videos)
 
 #-------------------------
-config = configparser.ConfigParser()
 
 def load_channels_list(filename):
     channels = OrderedDict()
@@ -108,10 +115,14 @@ def load_channels_list(filename):
     return channels
 
 if __name__ == '__main__':
-    channels = load_channels_list('channels.ini')
-#    iep = Channel("CIIA", "UCA7BaH2FseUEQff1WlOEj2g")
-#    iep.test()
-    for name, id in channels.items():
-        this_channel = Channel(name, id)
-        this_channel.run()
-
+    args = parser.parse_args()
+    if args.ini:
+        channels = load_channels_list('channels.ini')
+        for name, id in channels.items():
+            this_channel = Channel(name, id)
+            this_channel.run()
+    elif args.chid:
+        channel = Channel(args.chid, args.chid)
+        channel.run()
+    elif args.username:
+        print("Username flag detected")

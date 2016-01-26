@@ -37,6 +37,23 @@ class Channel(object):
         self.total_videos = 0
         self.captioned_videos = 0
 
+    @classmethod
+    def from_username(cls, username):
+        results = youtube.channels().list(
+            part="snippet",
+            forUsername=username
+        ).execute()
+        if(results['items']):
+            items = results['items'][0]
+            name = items['snippet']['title']
+            channel_id = items['id']
+            channel = cls(name, channel_id)
+            return channel
+        else:
+            print("Error: YouTube username %s not found" % username)
+            exit()
+
+
     #Query the channel in question for the id of the uplaods playlist
     def uploads_playlist(self):
         results = youtube.channels().list(
@@ -97,7 +114,8 @@ class Channel(object):
         self.get_videos()
         self.find_captions()
         print("Total videos in channel: %d" % self.total_videos)
-        print("Captioned Videos: %d\n" % self.captioned_videos)
+        print("Captioned Videos: %d" % self.captioned_videos)
+        print("Percent captioned: %0.2f%%\n" % ((self.captioned_videos / self.total_videos)*100))
 
 #-------------------------
 
@@ -117,12 +135,16 @@ def load_channels_list(filename):
 if __name__ == '__main__':
     args = parser.parse_args()
     if args.ini:
-        channels = load_channels_list('channels.ini')
+        channels = load_channels_list(args.ini)
         for name, id in channels.items():
             this_channel = Channel(name, id)
             this_channel.run()
     elif args.chid:
-        channel = Channel(args.chid, args.chid)
+        channel = Channel(None, args.chid)
         channel.run()
     elif args.username:
-        print("Username flag detected")
+        channel = Channel.from_username(args.username)
+        channel.run()
+    else:
+        parser.print_help()
+        praser.exit()

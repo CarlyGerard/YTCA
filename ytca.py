@@ -3,6 +3,7 @@ from apiclient.discovery import build
 from apiclient.errors import HttpError
 from oauth2client.tools import argparser
 from collections import OrderedDict
+import time
 import argparse
 import csv
 try:
@@ -108,6 +109,11 @@ class Channel(object):
             query_str = ",".join(chunk)
             self.video_request(query_str)
 
+    def update_csv(self, filename, date):
+        with open(filename, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([date, self.name, self.total_videos, self.captioned_videos])
+            
     def run(self):
         print("Processing channel %s" % self.name)
         self.uploads_playlist()
@@ -132,19 +138,32 @@ def load_channels_list(filename):
         channels.update({name:id})
     return channels
 
+def create_csv(filename):
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Date', 'Channel Name', 'Total Videos', 'Captioned'])
+
 if __name__ == '__main__':
+    today = time.strftime("%Y-%m-%d") 
+    filename = "ytcaReport_" + today + ".csv"
+    create_csv(filename)
+
     args = parser.parse_args()
+
     if args.ini:
         channels = load_channels_list(args.ini)
         for name, id in channels.items():
             this_channel = Channel(name, id)
             this_channel.run()
+            this_channel.update_csv(filename, today)
     elif args.chid:
         channel = Channel(None, args.chid)
         channel.run()
+        channel.update_csv(filename, today)
     elif args.username:
         channel = Channel.from_username(args.username)
         channel.run()
+        channel.update_csv(filename, today)
     else:
         parser.print_help()
         praser.exit()

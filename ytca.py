@@ -104,6 +104,7 @@ class Channel(object):
                 self.captioned_videos += 1
 
     def find_captions(self):
+        print("Counting captioned videos...")
         for chunk in list(self.videos_list):
             #Turn video list into a comma separated string for the API query
             query_str = ",".join(chunk)
@@ -112,7 +113,8 @@ class Channel(object):
     def update_csv(self, filename, date):
         with open(filename, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([date, self.name, self.total_videos, self.captioned_videos])
+            percentCaptioned = str((self.captioned_videos / self.total_videos)*100)
+            writer.writerow([date, self.name, self.total_videos, self.captioned_videos, percentCaptioned])
             
     def run(self):
         print("Processing channel %s" % self.name)
@@ -141,7 +143,7 @@ def load_channels_list(filename):
 def create_csv(filename):
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Date', 'Channel Name', 'Total Videos', 'Captioned'])
+        writer.writerow(['Date', 'Channel Name', 'Total Videos', 'Captioned Videos', '% Captioned'])
 
 if __name__ == '__main__':
     today = time.strftime("%Y-%m-%d") 
@@ -166,4 +168,3 @@ if __name__ == '__main__':
         channel.update_csv(filename, today)
     else:
         parser.print_help()
-        praser.exit()

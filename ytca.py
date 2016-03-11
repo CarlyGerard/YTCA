@@ -65,14 +65,14 @@ class Channel(object):
            uploads_list_id = channel['contentDetails']['relatedPlaylists']['uploads']
            self.uploads_list_id = uploads_list_id
 
-    #Go through the uploads plyalist and populate the list of video IDs 
+    #Go through the uploads plyalist and populate the list of video IDs
     def get_videos(self):
         playlist_results = youtube.playlistItems().list(
             playlistId=self.uploads_list_id,
             part="contentDetails",
             maxResults=50
         )
-        
+
         #Iterate through all pages in result set
         print("Populating videos list...")
         while playlist_results:
@@ -90,14 +90,14 @@ class Channel(object):
             #Get the next page
             playlist_results = youtube.playlistItems().list_next(playlist_results, response)
 
-    #Helper function for find_captions that 
+    #Helper function for find_captions that
     def video_request(self, videos_str):
         video_response = youtube.videos().list(
             part="contentDetails",
             id=videos_str,
             maxResults=50
         ).execute()
-        
+
         for video_result in video_response.get("items", []):
             if video_result['contentDetails']['caption'] == u'true':
                 self.captioned_videos += 1
@@ -147,4 +147,4 @@ if __name__ == '__main__':
         channel.run()
     else:
         parser.print_help()
-        praser.exit()
+        parser.exit()
